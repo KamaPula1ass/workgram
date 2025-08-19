@@ -12,38 +12,22 @@ from telegram.ext import (
     CallbackQueryHandler
 )
 
-# Настройка логирования
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     level=logging.INFO
 )
 logger = logging.getLogger(__name__)
 
-# Состояния для ConversationHandler
 TITLE, DESCRIPTION, CONTACT, CONFIRM_PAYMENT = range(4)
 
-# Получаем токен из переменных окружения
 TOKEN = os.getenv("TOKEN")
-
-# Проверка наличия токена
-if not TOKEN:
-    logger.error("ТОКЕН НЕ НАЙДЕН! Установите переменную окружения TOKEN")
-    exit(1)
-
-# ID администратора (ваш Telegram ID)
 ADMIN_ID = "752266705"
-
-# Имя вашего Telegram-канала
 CHANNEL_ID = "@workwave_kzn"
-
-# Стоимость публикации вакансии (в рублях)
 PUBLICATION_COST = 300
 VIP_COST = 800
 
-# Временное хранилище данных пользователя
 user_data = {}
 
-# Команда /start
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Приветствие и начало размещения вакансии"""
     welcome_text = (
