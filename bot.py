@@ -1,6 +1,8 @@
 # bot.py
 import os
 import logging
+import asyncio
+import aiohttp
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import (
     ApplicationBuilder,
@@ -12,22 +14,38 @@ from telegram.ext import (
     CallbackQueryHandler
 )
 
+# Настройка логирования
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     level=logging.INFO
 )
 logger = logging.getLogger(__name__)
 
+# Состояния для ConversationHandler
 TITLE, DESCRIPTION, CONTACT, CONFIRM_PAYMENT = range(4)
 
+# Получаем токен из переменных окружения
 TOKEN = os.getenv("TOKEN")
+
+# Проверка наличия токена
+if not TOKEN:
+    logger.error("ТОКЕН НЕ НАЙДЕН! Установите переменную окружения TOKEN")
+    exit(1)
+
+# ID администратора (ваш Telegram ID)
 ADMIN_ID = "752266705"
+
+# Имя вашего Telegram-канала
 CHANNEL_ID = "@workwave_kzn"
+
+# Стоимость публикации вакансии (в рублях)
 PUBLICATION_COST = 300
 VIP_COST = 800
 
+# Временное хранилище данных пользователя
 user_data = {}
 
+# Команда /start
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Приветствие и начало размещения вакансии"""
     welcome_text = (
@@ -216,6 +234,25 @@ async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("Операция отменена. Чтобы начать заново, введите /start")
     return ConversationHandler.END
 
+# Функция для "пробуждения" бота
+async def ping_self():
+    """Функция для "пробуждения" бота каждые 10 минут"""
+    # Замените YOUR_RENDER_APP_URL на ваш URL из Render
+    url = "https://workgram-kz.onrender.com"  # <-- ВАЖНО: Заменить на ваш URL!
+    while True:
+        try:
+            async with aiohttp.ClientSession() as session:
+                async with session.get(url) as resp:
+                    logger.info(f"Ping: {resp.status}")
+        except Exception as e:
+            logger.error(f"Ping error: {e}")
+        await asyncio.sleep(600)  # 10 минут
+
+def start_ping_loop():
+    """Запуск фоновой задачи для пинга"""
+    loop = asyncio.get_event_loop()
+    loop.create_task(ping_self())
+
 # Основная функция запуска
 def main():
     """Главная функция запуска бота"""
@@ -223,7 +260,10 @@ def main():
     
     # Создаем приложение
     app = ApplicationBuilder().token(TOKEN).build()
-
+    
+    # Запуск пинга
+    start_ping_loop()
+    
     # Настройка диалога
     conv_handler = ConversationHandler(
         entry_points=[CommandHandler('start', start)],
